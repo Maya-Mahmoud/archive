@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\DocumentFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -29,6 +30,7 @@ class DocumentController extends Controller implements HasMiddleware
 
         $documents = Document::query()
             ->with('creator')
+            ->withCount('files')
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', "%{$search}%")
@@ -67,13 +69,15 @@ class DocumentController extends Controller implements HasMiddleware
             'updated_by' => Auth::id(),
         ]);
 
+        $this->storeFiles($request, $document);
+
         return redirect()->route('documents.index')
             ->with('success', 'Document created successfully.');
     }
 
     public function show(Request $request, Document $document): View|JsonResponse
     {
-        $document->load(['creator', 'editor']);
+        $document->load(['creator', 'editor', 'files']);
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -88,6 +92,12 @@ class DocumentController extends Controller implements HasMiddleware
                 'editor' => $document->editor?->name,
                 'created_at' => $document->created_at?->format('Y-m-d H:i'),
                 'updated_at' => $document->updated_at?->format('Y-m-d H:i'),
+                'files' => $document->files->map(fn ($file) => [
+                    'id' => $file->id,
+                    'name' => $file->original_name,
+                    'size' => $file->human_size,
+                    'extension' => $file->extension,
+                ])->values(),
             ]);
         }
 
@@ -108,6 +118,8 @@ class DocumentController extends Controller implements HasMiddleware
             'updated_by' => Auth::id(),
         ]);
 
+        $this->storeFiles($request, $document);
+
         return redirect()->route('documents.index')
             ->with('success', 'Document updated successfully.');
     }
@@ -122,18 +134,36 @@ class DocumentController extends Controller implements HasMiddleware
 
     private function validateDocument(Request $request, ?int $ignoreId = null): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'document_number' => ['nullable', 'string', 'max:255', 'unique:documents,document_number'.($ignoreId ? ",{$ignoreId}" : '')],
             'description' => ['nullable', 'string'],
             'category' => ['nullable', 'string', 'max:255'],
             'document_date' => ['nullable', 'date'],
+            'files' => ['nullable', 'array'],
+            'files.*' => ['file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
         ], [], [
             'title' => 'title',
             'document_number' => 'document number',
             'description' => 'description',
             'category' => 'category',
             'document_date' => 'document date',
+            'files.*' => 'file',
         ]);
+
+        unset($validated['files']);
+
+        return $validated;
+    }
+
+    private function storeFiles(Request $request, Document $document): void
+    {
+        if (! $request->hasFile('files') || ! Auth::user()?->hasPermission('files.upload')) {
+            return;
+        }
+
+        foreach ($request->file('files') as $uploaded) {
+            DocumentFile::storeUploaded($document, $uploaded);
+        }
     }
 }

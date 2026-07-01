@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class DocumentFile extends Model
 {
@@ -37,6 +40,25 @@ class DocumentFile extends Model
     public function uploader(): BelongsTo
     {
         return $this->belongsTo(User::class, 'uploaded_by');
+    }
+
+    public static function storeUploaded(Document $document, UploadedFile $uploaded): self
+    {
+        $extension = $uploaded->getClientOriginalExtension();
+        $storedName = (string) Str::uuid().'.'.$extension;
+        $path = $uploaded->storeAs("documents/{$document->id}", $storedName, 'local');
+
+        return $document->files()->create([
+            'original_name' => $uploaded->getClientOriginalName(),
+            'file_name' => $storedName,
+            'file_path' => $path,
+            'mime_type' => $uploaded->getClientMimeType(),
+            'extension' => $extension,
+            'size' => $uploaded->getSize(),
+            'version' => 1,
+            'is_current' => true,
+            'uploaded_by' => Auth::id(),
+        ]);
     }
 
     public function getHumanSizeAttribute(): string

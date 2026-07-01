@@ -46,6 +46,7 @@
                             <th class="px-6 py-3">Category</th>
                             <th class="px-6 py-3">Date</th>
                             <th class="px-6 py-3">Created by</th>
+                            <th class="px-6 py-3">Files</th>
                             <th class="px-6 py-3">Actions</th>
                         </tr>
                     </thead>
@@ -61,6 +62,11 @@
                                 <td class="px-6 py-4">{{ $document->category ?? '—' }}</td>
                                 <td class="px-6 py-4">{{ $document->document_date?->format('Y-m-d') ?? '—' }}</td>
                                 <td class="px-6 py-4 text-gray-500">{{ $document->creator?->name ?? '—' }}</td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center gap-1 text-gray-600">
+                                        📎 {{ $document->files_count }}
+                                    </span>
+                                </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
                                         <button type="button" @click="openView({{ $document->id }})" class="text-gray-600 hover:underline">View</button>
@@ -80,7 +86,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-8 text-center text-gray-400">No documents found.</td>
+                                <td colspan="7" class="px-6 py-8 text-center text-gray-400">No documents found.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -132,6 +138,16 @@
                         <textarea x-model="form.description" rows="4" class="w-full border-gray-300 rounded-md shadow-sm" placeholder="Notes or description"></textarea>
                         <template x-if="errors.description"><p class="text-red-500 text-sm mt-1" x-text="errors.description[0]"></p></template>
                     </div>
+
+                    @if (Auth::user()->hasPermission('files.upload'))
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Attach Files</label>
+                            <input type="file" x-ref="formFiles" multiple
+                                   class="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-gray-800 file:text-white file:cursor-pointer hover:file:bg-gray-700">
+                            <p class="text-xs text-gray-400 mt-1">PDF, images, Word or Excel — up to 20MB each.</p>
+                            <template x-if="fileError"><p class="text-red-500 text-sm mt-1" x-text="fileError"></p></template>
+                        </div>
+                    @endif
 
                     <div class="flex items-center gap-3">
                         <button type="submit" :disabled="submitting"
@@ -187,6 +203,45 @@
                         </div>
                     </dl>
 
+                    <div class="mt-6 border-t border-gray-100 pt-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <h4 class="font-semibold text-gray-700">Attached Files</h4>
+                            @if (Auth::user()->hasPermission('files.upload'))
+                                <label class="px-3 py-1.5 bg-gray-800 text-white text-sm rounded-md hover:bg-gray-700 cursor-pointer">
+                                    <span x-text="uploading ? 'Uploading...' : '+ Upload'"></span>
+                                    <input type="file" class="hidden" multiple @change="uploadFiles($event)" :disabled="uploading">
+                                </label>
+                            @endif
+                        </div>
+
+                        <template x-if="uploadError">
+                            <p class="text-red-500 text-sm mb-2" x-text="uploadError"></p>
+                        </template>
+
+                        <ul class="divide-y divide-gray-100">
+                            <template x-for="file in (view.files || [])" :key="file.id">
+                                <li class="flex items-center justify-between py-2">
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <span>📄</span>
+                                        <span class="truncate" x-text="file.name"></span>
+                                        <span class="text-gray-400 text-sm" x-text="'(' + file.size + ')'"></span>
+                                    </div>
+                                    <div class="flex items-center gap-3 shrink-0">
+                                        @if (Auth::user()->hasPermission('files.download'))
+                                            <a :href="`${base}/files/${file.id}/download`" class="text-blue-600 hover:underline text-sm">Download</a>
+                                        @endif
+                                        @if (Auth::user()->hasPermission('files.delete'))
+                                            <button type="button" @click="deleteFile(file.id)" class="text-red-600 hover:underline text-sm">Delete</button>
+                                        @endif
+                                    </div>
+                                </li>
+                            </template>
+                            <template x-if="!view.files || view.files.length === 0">
+                                <li class="py-2 text-gray-400 text-sm">No files attached yet.</li>
+                            </template>
+                        </ul>
+                    </div>
+
                     <div class="mt-6 flex items-center gap-3">
                         @if (Auth::user()->hasPermission('documents.edit'))
                             <button type="button" @click="editFromView()" class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700">Edit</button>
@@ -205,6 +260,8 @@
                 showView: false,
                 mode: 'create',
                 submitting: false,
+                uploading: false,
+                uploadError: '',
                 errors: {},
                 form: { id: null, title: '', document_number: '', category: '', document_date: '', description: '' },
                 view: {},
@@ -212,9 +269,19 @@
                 base: @json(url('documents')),
                 csrf: document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
 
+                get fileError() {
+                    const key = Object.keys(this.errors).find(k => k.startsWith('files'));
+                    return key ? this.errors[key][0] : '';
+                },
+
+                clearFileInput() {
+                    if (this.$refs.formFiles) this.$refs.formFiles.value = '';
+                },
+
                 resetForm() {
                     this.errors = {};
                     this.form = { id: null, title: '', document_number: '', category: '', document_date: '', description: '' };
+                    this.clearFileInput();
                 },
 
                 openCreate() {
@@ -244,8 +311,68 @@
                 },
 
                 async openView(id) {
+                    this.uploadError = '';
                     this.view = await this.fetchDocument(id);
                     this.showView = true;
+                },
+
+                async uploadFiles(event) {
+                    const files = event.target.files;
+                    if (!files || files.length === 0) return;
+
+                    this.uploading = true;
+                    this.uploadError = '';
+
+                    const body = new FormData();
+                    body.append('_token', this.csrf);
+                    for (const file of files) {
+                        body.append('files[]', file);
+                    }
+
+                    try {
+                        const res = await fetch(`${this.base}/${this.view.id}/files`, {
+                            method: 'POST',
+                            body,
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        });
+
+                        if (res.status === 422) {
+                            const data = await res.json();
+                            this.uploadError = Object.values(data.errors ?? {}).flat()[0] ?? 'Invalid file.';
+                        } else if (!res.ok) {
+                            this.uploadError = 'Upload failed. Please try again.';
+                        } else {
+                            this.view = await this.fetchDocument(this.view.id);
+                        }
+                    } catch (e) {
+                        this.uploadError = 'Network error. Please try again.';
+                    }
+
+                    event.target.value = '';
+                    this.uploading = false;
+                },
+
+                async deleteFile(fileId) {
+                    if (!confirm('Are you sure you want to delete this file?')) return;
+
+                    const body = new FormData();
+                    body.append('_token', this.csrf);
+                    body.append('_method', 'DELETE');
+
+                    try {
+                        const res = await fetch(`${this.base}/files/${fileId}`, {
+                            method: 'POST',
+                            body,
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                        });
+                        if (res.ok) {
+                            this.view = await this.fetchDocument(this.view.id);
+                        } else {
+                            alert('Could not delete the file.');
+                        }
+                    } catch (e) {
+                        alert('Network error. Please try again.');
+                    }
                 },
 
                 editFromView() {
@@ -266,6 +393,11 @@
                     body.append('category', this.form.category ?? '');
                     body.append('document_date', this.form.document_date ?? '');
                     body.append('description', this.form.description ?? '');
+
+                    const fi = this.$refs.formFiles;
+                    if (fi && fi.files) {
+                        for (const file of fi.files) body.append('files[]', file);
+                    }
 
                     try {
                         const res = await fetch(url, {
