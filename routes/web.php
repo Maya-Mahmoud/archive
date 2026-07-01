@@ -1,11 +1,12 @@
 <?php
 
+use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('dashboard');
 });
 
 Route::get('/dashboard', function () {
@@ -19,6 +20,9 @@ Route::middleware('auth')->group(function () {
 
     Route::resource('roles', RoleController::class)->except('show')
         ->middleware('permission:roles.manage');
+
+    Route::resource('documents', DocumentController::class)
+        ->middleware('permission:documents.view');
 });
 
 require __DIR__.'/auth.php';
