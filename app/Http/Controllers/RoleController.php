@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Role;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -12,8 +13,9 @@ class RoleController extends Controller
     public function index(): View
     {
         $roles = Role::withCount('users')->orderBy('id')->get();
+        $groups = Role::permissionGroups();
 
-        return view('roles.index', compact('roles'));
+        return view('roles.index', compact('roles', 'groups'));
     }
 
     public function create(): View
@@ -38,8 +40,18 @@ class RoleController extends Controller
             ->with('success', 'Role created successfully.');
     }
 
-    public function edit(Role $role): View
+    public function edit(Request $request, Role $role): View|JsonResponse
     {
+        if ($request->wantsJson()) {
+            return response()->json([
+                'id' => $role->id,
+                'name' => $role->name,
+                'display_name' => $role->display_name,
+                'description' => $role->description,
+                'permissions' => $role->permissions ?? [],
+            ]);
+        }
+
         $groups = Role::permissionGroups();
 
         return view('roles.edit', compact('role', 'groups'));
@@ -91,6 +103,10 @@ class RoleController extends Controller
     private function cleanPermissions(Request $request): array
     {
         $selected = (array) $request->input('permissions', []);
+
+        if (in_array('*', $selected, true)) {
+            return ['*'];
+        }
 
         return array_values(array_intersect($selected, Role::allPermissionKeys()));
     }
