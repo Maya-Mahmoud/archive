@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\Setting;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +22,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        $orgName = config('app.name');
+
+        if (Schema::hasTable('settings')) {
+            $orgName = Setting::get('organization_name', $orgName);
+        }
+
+        View::share('orgName', $orgName);
     }
 }
