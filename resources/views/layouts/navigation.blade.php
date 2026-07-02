@@ -20,6 +20,11 @@
                             {{ __('Documents') }}
                         </x-nav-link>
                     @endif
+                    @if (Auth::user()->hasPermission('users.manage'))
+                        <x-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+                            {{ __('Users') }}
+                        </x-nav-link>
+                    @endif
                     @if (Auth::user()->hasPermission('roles.manage'))
                         <x-nav-link :href="route('roles.index')" :active="request()->routeIs('roles.*')">
                             {{ __('Roles') }}
@@ -83,6 +88,11 @@
             @if (Auth::user()->hasPermission('documents.view'))
                 <x-responsive-nav-link :href="route('documents.index')" :active="request()->routeIs('documents.*')">
                     {{ __('Documents') }}
+                </x-responsive-nav-link>
+            @endif
+            @if (Auth::user()->hasPermission('users.manage'))
+                <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.*')">
+                    {{ __('Users') }}
                 </x-responsive-nav-link>
             @endif
             @if (Auth::user()->hasPermission('roles.manage'))
