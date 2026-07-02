@@ -1,10 +1,10 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">General Settings</h2>
-    </x-slot>
+    <div class="py-10">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
 
-    <div class="py-12">
-        <div class="max-w-3xl mx-auto sm:px-6 lg:px-8">
+            <div class="page-head">
+                <h2 class="page-title">General Settings</h2>
+            </div>
 
             @if (session('success'))
                 <div class="mb-4 p-4 bg-green-100 text-green-800 rounded-md">{{ session('success') }}</div>
@@ -20,7 +20,7 @@
                 </div>
             @endif
 
-            <div class="bg-white shadow-sm sm:rounded-lg p-6">
+            <div class="content-card p-6">
                 <form action="{{ route('settings.update') }}" method="POST">
                     @csrf
                     @method('PUT')
@@ -50,7 +50,7 @@
                                class="w-full border-gray-300 rounded-md shadow-sm" placeholder="Optional">
                     </div>
 
-                    <button type="submit" class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700">Save Settings</button>
+                    <button type="submit" class="app-btn">Save Settings</button>
                 </form>
             </div>
         </div>

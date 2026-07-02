@@ -1,43 +1,36 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Documents</h2>
-        </div>
-    </x-slot>
-
     <style>[x-cloak]{display:none!important}</style>
 
-    <div class="py-12" x-data="documentsPage()">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-10" x-data="documentsPage()">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+            <div class="page-head">
+                <h2 class="page-title">Documents</h2>
+                @if (Auth::user()->hasPermission('documents.create'))
+                    <button type="button" @click="openCreate()" class="app-btn">+ Add Document</button>
+                @endif
+            </div>
 
             @if (session('success'))
                 <div class="mb-4 p-4 bg-green-100 text-green-800 rounded-md">{{ session('success') }}</div>
             @endif
 
-            <div class="flex items-center justify-between mb-6 gap-3 flex-wrap">
-                <form method="GET" action="{{ route('documents.index') }}" class="flex flex-wrap gap-3 flex-1">
-                    <input type="text" name="search" value="{{ $search }}" placeholder="Search documents..."
-                           class="flex-1 min-w-64 border-gray-300 rounded-md shadow-sm">
-                    <select name="category" class="border-gray-300 rounded-md shadow-sm">
-                        <option value="">All categories</option>
-                        @foreach ($categories as $cat)
-                            <option value="{{ $cat }}" @selected($category === $cat)>{{ $cat }}</option>
-                        @endforeach
-                    </select>
-                    <button type="submit" class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700">Search</button>
-                    @if ($search || $category)
-                        <a href="{{ route('documents.index') }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Reset</a>
-                    @endif
-                </form>
-                @if (Auth::user()->hasPermission('documents.create'))
-                    <button type="button" @click="openCreate()"
-                            class="px-4 py-2 bg-gray-800 text-white text-sm rounded-md hover:bg-gray-700 whitespace-nowrap">
-                        + Add Document
-                    </button>
+            <form method="GET" action="{{ route('documents.index') }}" class="flex flex-wrap gap-3 mb-6">
+                <input type="text" name="search" value="{{ $search }}" placeholder="Search documents..."
+                       class="flex-1 min-w-64 border-gray-300 rounded-md shadow-sm">
+                <select name="category" class="border-gray-300 rounded-md shadow-sm">
+                    <option value="">All categories</option>
+                    @foreach ($categories as $cat)
+                        <option value="{{ $cat }}" @selected($category === $cat)>{{ $cat }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="app-btn">Search</button>
+                @if ($search || $category)
+                    <a href="{{ route('documents.index') }}" class="app-btn-outline">Reset</a>
                 @endif
-            </div>
+            </form>
 
-            <div class="bg-white shadow-sm sm:rounded-lg overflow-hidden">
+            <div class="content-card table-responsive">
                 <table class="w-full text-left">
                     <thead class="bg-gray-50 text-gray-600 text-sm">
                         <tr>
@@ -54,7 +47,7 @@
                         @forelse ($documents as $document)
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 font-medium">
-                                    <button type="button" @click="openView({{ $document->id }})" class="text-blue-600 hover:underline">
+                                    <button type="button" @click="openView({{ $document->id }})" class="text-purple-600 hover:underline">
                                         {{ $document->title }}
                                     </button>
                                 </td>
@@ -71,7 +64,7 @@
                                     <div class="flex items-center gap-3">
                                         <button type="button" @click="openView({{ $document->id }})" class="text-gray-600 hover:underline">View</button>
                                         @if (Auth::user()->hasPermission('documents.edit'))
-                                            <button type="button" @click="openEdit({{ $document->id }})" class="text-blue-600 hover:underline">Edit</button>
+                                            <button type="button" @click="openEdit({{ $document->id }})" class="text-purple-600 hover:underline">Edit</button>
                                         @endif
                                         @if (Auth::user()->hasPermission('documents.delete'))
                                             <form action="{{ route('documents.destroy', $document) }}" method="POST"
@@ -142,19 +135,17 @@
                     @if (Auth::user()->hasPermission('files.upload'))
                         <div class="mb-6">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Attach Files</label>
-                            <input type="file" x-ref="formFiles" multiple
-                                   class="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-gray-800 file:text-white file:cursor-pointer hover:file:bg-gray-700">
+                            <input type="file" x-ref="formFiles" multiple class="file-input w-full text-sm text-gray-600">
                             <p class="text-xs text-gray-400 mt-1">PDF, images, Word or Excel — up to {{ \App\Models\Setting::get('max_file_size_mb', 20) }}MB each.</p>
                             <template x-if="fileError"><p class="text-red-500 text-sm mt-1" x-text="fileError"></p></template>
                         </div>
                     @endif
 
                     <div class="flex items-center gap-3">
-                        <button type="submit" :disabled="submitting"
-                                class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
+                        <button type="submit" :disabled="submitting" class="app-btn">
                             <span x-text="submitting ? 'Saving...' : 'Save'"></span>
                         </button>
-                        <button type="button" @click="showForm = false" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Cancel</button>
+                        <button type="button" @click="showForm = false" class="app-btn-outline">Cancel</button>
                     </div>
                 </form>
             </div>
@@ -207,7 +198,7 @@
                         <div class="flex items-center justify-between mb-3">
                             <h4 class="font-semibold text-gray-700">Attached Files</h4>
                             @if (Auth::user()->hasPermission('files.upload'))
-                                <label class="px-3 py-1.5 bg-gray-800 text-white text-sm rounded-md hover:bg-gray-700 cursor-pointer">
+                                <label class="app-btn" style="cursor:pointer">
                                     <span x-text="uploading ? 'Uploading...' : '+ Upload'"></span>
                                     <input type="file" class="hidden" multiple @change="uploadFiles($event)" :disabled="uploading">
                                 </label>
@@ -244,9 +235,9 @@
 
                     <div class="mt-6 flex items-center gap-3">
                         @if (Auth::user()->hasPermission('documents.edit'))
-                            <button type="button" @click="editFromView()" class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700">Edit</button>
+                            <button type="button" @click="editFromView()" class="app-btn">Edit</button>
                         @endif
-                        <button type="button" @click="showView = false" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Close</button>
+                        <button type="button" @click="showView = false" class="app-btn-outline">Close</button>
                     </div>
                 </div>
             </div>

@@ -1,14 +1,13 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">Users</h2>
-        </div>
-    </x-slot>
-
     <style>[x-cloak]{display:none!important}</style>
 
-    <div class="py-12" x-data="usersPage()">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-10" x-data="usersPage()">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+            <div class="page-head">
+                <h2 class="page-title">Users</h2>
+                <button type="button" @click="openCreate()" class="app-btn">+ Add User</button>
+            </div>
 
             @if (session('success'))
                 <div class="mb-4 p-4 bg-green-100 text-green-800 rounded-md">{{ session('success') }}</div>
@@ -17,14 +16,7 @@
                 <div class="mb-4 p-4 bg-red-100 text-red-800 rounded-md">{{ session('error') }}</div>
             @endif
 
-            <div class="flex justify-end mb-6">
-                <button type="button" @click="openCreate()"
-                        class="px-4 py-2 bg-gray-800 text-white text-sm rounded-md hover:bg-gray-700">
-                    + Add User
-                </button>
-            </div>
-
-            <div class="bg-white shadow-sm sm:rounded-lg overflow-hidden">
+            <div class="content-card table-responsive">
                 <table class="w-full text-left">
                     <thead class="bg-gray-50 text-gray-600 text-sm">
                         <tr>
@@ -50,7 +42,7 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
-                                        <button type="button" @click="openEdit({{ $user->id }})" class="text-blue-600 hover:underline">Edit</button>
+                                        <button type="button" @click="openEdit({{ $user->id }})" class="text-purple-600 hover:underline">Edit</button>
                                         @if ($user->id !== Auth::id())
                                             <form action="{{ route('users.destroy', $user) }}" method="POST"
                                                   onsubmit="return confirm('Are you sure you want to delete this user?')">
@@ -77,7 +69,7 @@
         </div>
 
         <div x-cloak x-show="showForm" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-transition.opacity>
-            <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showForm = false"></div>
+            <div class="modal-backdrop absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showForm = false"></div>
 
             <div class="relative bg-white w-full max-w-2xl rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto" x-transition>
                 <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -129,11 +121,10 @@
                     </div>
 
                     <div class="flex items-center gap-3">
-                        <button type="submit" :disabled="submitting"
-                                class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700 disabled:opacity-50">
+                        <button type="submit" :disabled="submitting" class="app-btn">
                             <span x-text="submitting ? 'Saving...' : 'Save'"></span>
                         </button>
-                        <button type="button" @click="showForm = false" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Cancel</button>
+                        <button type="button" @click="showForm = false" class="app-btn-outline">Cancel</button>
                     </div>
                 </form>
             </div>

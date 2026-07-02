@@ -1,25 +1,31 @@
 <x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600">
-        {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }}
-    </div>
+    <div class="auth-title">{{ __('Reset Password') }}</div>
+    <div class="auth-subtitle">{{ __('We will email you a reset link') }}</div>
 
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+    @if (session('status'))
+        <div class="auth-alert auth-alert-success">{{ session('status') }}</div>
+    @endif
+
+    @if ($errors->any())
+        <div class="auth-alert auth-alert-error">
+            @foreach ($errors->all() as $error)
+                <div>{{ $error }}</div>
+            @endforeach
+        </div>
+    @endif
+
+    <p style="color:#64748b;font-size:.88rem;margin-bottom:1.25rem;line-height:1.6">
+        {{ __('Forgot your password? No problem. Enter your email address and we will send you a link to choose a new one.') }}
+    </p>
 
     <form method="POST" action="{{ route('password.email') }}">
         @csrf
 
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
+        <div class="auth-field">
+            <label class="auth-label" for="email">{{ __('Email') }}</label>
+            <input class="auth-input" id="email" type="email" name="email" value="{{ old('email') }}" required autofocus>
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <x-primary-button>
-                {{ __('Email Password Reset Link') }}
-            </x-primary-button>
-        </div>
+        <button type="submit" class="auth-btn">{{ __('Email Password Reset Link') }}</button>
     </form>
 </x-guest-layout>
