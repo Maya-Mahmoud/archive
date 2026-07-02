@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Document;
 use App\Models\DocumentFile;
+use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,7 +42,7 @@ class DocumentController extends Controller implements HasMiddleware
             })
             ->when($category, fn ($query) => $query->where('category', $category))
             ->latest()
-            ->paginate(12)
+            ->paginate((int) Setting::get('items_per_page', 12))
             ->withQueryString();
 
         $categories = Document::query()
@@ -134,6 +135,8 @@ class DocumentController extends Controller implements HasMiddleware
 
     private function validateDocument(Request $request, ?int $ignoreId = null): array
     {
+        $maxKb = ((int) Setting::get('max_file_size_mb', 20)) * 1024;
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'document_number' => ['nullable', 'string', 'max:255', 'unique:documents,document_number'.($ignoreId ? ",{$ignoreId}" : '')],
@@ -141,7 +144,7 @@ class DocumentController extends Controller implements HasMiddleware
             'category' => ['nullable', 'string', 'max:255'],
             'document_date' => ['nullable', 'date'],
             'files' => ['nullable', 'array'],
-            'files.*' => ['file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
+            'files.*' => ['file', "max:{$maxKb}", 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
         ], [], [
             'title' => 'title',
             'document_number' => 'document number',

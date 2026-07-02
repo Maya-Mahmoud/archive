@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Document;
 use App\Models\DocumentFile;
+use App\Models\Setting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -25,9 +26,11 @@ class DocumentFileController extends Controller implements HasMiddleware
 
     public function store(Request $request, Document $document): JsonResponse|RedirectResponse
     {
+        $maxKb = ((int) Setting::get('max_file_size_mb', 20)) * 1024;
+
         $request->validate([
             'files' => ['required', 'array'],
-            'files.*' => ['file', 'max:20480', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
+            'files.*' => ['file', "max:{$maxKb}", 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
         ], [], [
             'files' => 'files',
             'files.*' => 'file',

@@ -144,7 +144,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Attach Files</label>
                             <input type="file" x-ref="formFiles" multiple
                                    class="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-gray-800 file:text-white file:cursor-pointer hover:file:bg-gray-700">
-                            <p class="text-xs text-gray-400 mt-1">PDF, images, Word or Excel — up to 20MB each.</p>
+                            <p class="text-xs text-gray-400 mt-1">PDF, images, Word or Excel — up to {{ \App\Models\Setting::get('max_file_size_mb', 20) }}MB each.</p>
                             <template x-if="fileError"><p class="text-red-500 text-sm mt-1" x-text="fileError"></p></template>
                         </div>
                     @endif
